@@ -1,0 +1,119 @@
+---
+title: "final"
+author: "Newton Peng"
+date: "12/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, include=F, echo=F}
+source("preprocessing.r")
+```
+
+
+Loading Dataset
+```{r}
+data <- read_csv("training.csv")
+data <- preprocess(data)
+#head(data)
+
+submission.data <- read_csv("test.csv")
+submission.data.cleaned <- preprocess(submission.data)
+
+training.rows <- createDataPartition(y <- data$growth, p=0.9, list=F)
+training <- data[training.rows,]
+testing <- data[-training.rows, ]
+```
+
+
+```{r}
+set.seed(1)
+
+# this random forest takes like 5 minutes to compute
+rf <- randomForest(growth ~ ., data = training, importance = TRUE)
+# see what variables are important
+importance(rf)
+varImpPlot(rf, cex=0.7)
+
+# make prediction on test set made earlier
+rf.predictions <- predict(rf, testing)
+calc_rmse(rf.predictions)
+calc_rmse(predict(rf, training), "training")
+```
+
+```{r}
+#Run a random forest with the least important predictors removed
+imp <- data.frame(importance(rf))
+least.imp.variables <- row.names(imp[which(imp$X.IncMSE < 2), ])
+temp.data <- training %>% select(-all_of(least.imp.variables))
+
+rf <- randomForest(growth ~ ., data = temp.data, importance = TRUE, ntree=500)
+# see what variables are important
+importance(rf)
+varImpPlot(rf, cex=0.7)
+
+# make prediction on test set made earlier
+rf.predictions <- predict(rf, testing)
+calc_rmse(rf.predictions)
+calc_rmse(predict(rf, training), "training")
+```
+
+
+Looking at outliers:
+
+```{r, warning=F}
+ggplot(aes(x=Average_growth, y=growth, fill=Average_growth), data=training) + geom_boxplot() + scale_fill_viridis(discrete=T,alpha=0.6) + geom_jitter(color="black", size=0.4, alpha=0.9) + theme_ipsum() + theme(legend.position="none", plot.title = element_text(size=11))
+
+
+ggplot(aes(x=Subscribers, y=growth, fill=Subscribers), data=training) + geom_boxplot() + scale_fill_viridis(discrete=T,alpha=0.6) + geom_jitter(color="black", size=0.4, alpha=0.9) + theme_ipsum() + theme(legend.position="none", plot.title = element_text(size=11))    
+
+
+ggplot(aes(x=Vid_count, y=growth, fill=Vid_count), data=training) + geom_boxplot() + scale_fill_viridis(discrete=T,alpha=0.6) + geom_jitter(color="black", size=0.4, alpha=0.9) + theme_ipsum() + theme(legend.position="none", plot.title = element_text(size=11))
+
+ggplot(aes(x=Channel_views, y=growth, fill=Channel_views), data=training) + geom_boxplot() + scale_fill_viridis(discrete=T,alpha=0.6) + geom_jitter(color="black", size=0.4, alpha=0.9) + theme_ipsum() + theme(legend.position="none", plot.title = element_text(size=11))
+
+```
+
+Tuning the random forest:
+```{r}
+set.seed(1)
+# tunegrid <- expand.grid(mtry=seq(25, 100, 4))
+# mtry approximately 50 was the best model for 1.42
+# 
+# 
+# #oob.train.control <- trainControl(method="oob", savePredictions = T, workers=2)
+# oob.train.control <- trainControl(method="oob", savePredictions = T)
+# 
+# forest.tuned <- train(growth~., data=temp.data, method="rf", ntree=1000, trControl= oob.train.control, tuneGrid=tunegrid) 
+# ^ This takes a long time to run (4+hours)
+# 
+# rf.predictions <- predict(forest.tuned, testing)
+# calc_rmse(rf.predictions)
+# calc_rmse(predict(forest.tuned, training), "training")
+
+rf.tuned <- randomForest(growth ~ ., data = temp.data, importance = TRUE, ntree=1000, mtry=100)
+# see what variables are important
+importance(rf.tuned)
+varImpPlot(rf.tuned, cex=0.7)
+
+# make prediction on test set made earlier
+rf.predictions <- predict(rf.tuned, testing)
+calc_rmse(rf.predictions)
+calc_rmse(predict(rf.tuned, training), "training")
+```
+What's the default number of trees?
+What's the default number of nodes per tree?
+
+The three models are sequential: ie, we run the first model to find the least important predictors, run the second model to see if that improved, then tuned a random forest
+
+```{r}
+# Submit the predictions
+submission.predict <- predict(rf.tuned, submission.data.cleaned)
+results <- data.frame(id = submission.data$id, growth_2_6 = submission.predict)
+write_csv(results,"submit.csv")
+
+```
