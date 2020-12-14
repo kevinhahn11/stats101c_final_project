@@ -1,5 +1,5 @@
 # Stats 101C Final Competition  
 Kevin Hahn, Newton Peng, Jason Chhay  
 Instructions:\
-In the preprocessing_final_project.R file, rename the file names in lines 20 and 24 to the path names in your directory.  
+In the model_creation.Rmd file, rename the root directory in line 10 to the path of where these files will be saved.  
 Then run the Rmd file
