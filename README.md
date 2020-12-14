@@ -1,1 +1,2 @@
-# stats101c_final_project
+# Stats 101C Final Competition  
+Kevin Hahn, Newton Peng, Jason Chhay
