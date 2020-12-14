@@ -1,17 +1,19 @@
 ---
-title: "final"
-author: "Newton Peng"
+title: "Final Competition"
 date: "12/5/2020"
 output: html_document
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/kevin/Documents/Classes/STATS 101C/stats101c-lec4-final-competition") 
+# change the root.dir to the directory you have the files saved in
 ```
 
 
 ```{r, include=F, echo=F}
-source("preprocessing.r")
+source("preprocessing_final_project.r")
 ```
 
 
